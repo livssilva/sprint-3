@@ -28,4 +28,9 @@ router.put("/produto/:id", ProdutoController.atualizar);
 // Remover (desativar) um produto por ID
 router.delete("/produto/:id", ProdutoController.remover);
 
+// ==================== ROTAS DE CATEGORIA ====================
+
+
+// ==================== ROTAS DE PRODUTO ====================
+
 export { router };
