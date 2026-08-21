@@ -1,6 +1,7 @@
 import { Router, type Request, type Response } from "express";
 import ProdutoController from "./controller/ProdutoController.js";
-import CategoriaController from "./controller/CategoriaController.js";
+import CategoriaController from "./controller/CategoriaController.js";0
+import MovimentacaoController from "./controller/MovimentacaoController.js";
 
 const router = Router();
 
@@ -37,6 +38,8 @@ router.put("/categoria/:id", CategoriaController.atualizar);
 router.delete("/categoria/:id", CategoriaController.remover);
 
 // ==================== ROTAS DE MOVIMENTAÇÃO ====================
-
+router.get("/movimentacoes", MovimentacaoController.todos);
+router.get("/movimentacoes/produto/:idProduto", MovimentacaoController.porProduto);
+router.post("/movimentacao", MovimentacaoController.cadastrar);
 
 export { router };
