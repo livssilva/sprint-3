@@ -2,6 +2,8 @@ import { Router, type Request, type Response } from "express";
 import ProdutoController from "./controller/ProdutoController.js";
 import CategoriaController from "./controller/CategoriaController.js";0
 import MovimentacaoController from "./controller/MovimentacaoController.js";
+import UsuarioController from "./controller/UsuarioController.js";
+import { autenticarToken } from "./middleware/AuthMiddleware.js";
 
 const router = Router();
 
@@ -12,6 +14,14 @@ router.get('/', (req: Request, res: Response) => {
         timestamp: new Date()
     });
 });
+
+// ==================== ROTAS PÚBLICAS ====================
+router.post("/login", UsuarioController.login);
+router.post("/usuario", UsuarioController.cadastrar);
+
+// ==================== ROTAS PROTEGIDAS (Exigem Token JWT) ====================
+// Usuários
+router.get("/usuarios", autenticarToken, UsuarioController.todos);
 
 // ==================== ROTAS DE PRODUTO ====================
 
@@ -29,6 +39,7 @@ router.put("/produto/:id", ProdutoController.atualizar);
 
 // Remover (desativar) um produto por ID
 router.delete("/produto/:id", ProdutoController.remover);
+
 
 // ==================== ROTAS DE CATEGORIA ====================
 router.get("/categorias", CategoriaController.todos);
