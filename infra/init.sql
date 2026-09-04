@@ -500,3 +500,20 @@ FROM movimentacao AS m
 INNER JOIN produto AS p
     ON p.id_produto = m.id_produto
 ORDER BY m.data_movimentacao DESC;
+
+CREATE TABLE IF NOT EXISTS usuario (
+    id_usuario SERIAL PRIMARY KEY,
+    nome VARCHAR(100) NOT NULL,
+    email VARCHAR(150) NOT NULL UNIQUE,
+    senha VARCHAR(255) NOT NULL,
+    role VARCHAR(20) NOT NULL DEFAULT 'admin',
+    criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+INSERT INTO usuario (nome, email, senha, role)
+VALUES (
+    'ADMINISTRADOR', 
+    'admin@techforge.com', 
+    '$2a$10$7R0Z4Q6QeR2N1o0bU1qW2.O2gM3K3L3X3Y3Z3A3B3C3D3E3F3G', 
+    'admin'
+);
