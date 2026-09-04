@@ -5,7 +5,7 @@ const database = new DatabaseModel().pool;
 
 class Produto {
     // ==================== ATRIBUTOS PRIVADOS ====================
-    private id_produto: number = 0;
+    private id_produto: number;
     private id_categoria: number;
     private codigo: string;
     private nome: string;
@@ -23,8 +23,10 @@ class Produto {
         _preco_unitario: number,
         _descricao?: string | null,
         _quantidade_disponivel: number = 0,
-        _quantidade_minima: number = 0
+        _quantidade_minima: number = 0,
+        _id_produto: number = 0 // <--- Adicionado parâmetro opcional no final
     ) {
+        this.id_produto = _id_produto; // <--- Atribuição do ID
         this.id_categoria = _id_categoria;
         this.codigo = _codigo;
         this.nome = _nome;
@@ -80,9 +82,6 @@ class Produto {
 
     // ==================== MÉTODOS ESTÁTICOS ====================
 
-    /**
-     * Busca e retorna todos os produtos com status ativo no banco de dados.
-     */
     static async listarProdutos(): Promise<ProdutoDTO[]> {
         try {
             const querySelectProduto = `SELECT * FROM produto WHERE ativo = TRUE ORDER BY nome;`;
@@ -94,9 +93,6 @@ class Produto {
         }
     }
 
-    /**
-     * Busca e retorna os dados de um produto específico pelo seu ID.
-     */
     static async listarProduto(id_produto: number): Promise<ProdutoDTO> {
         try {
             const querySelectProduto = `SELECT * FROM produto WHERE id_produto = $1;`;
@@ -113,9 +109,6 @@ class Produto {
         }
     }
 
-    /**
-     * Cadastra um novo produto no banco de dados.
-     */
     static async cadastrarProduto(produto: Produto): Promise<boolean> {
         try {
             const queryInsertProduto = `
@@ -149,9 +142,6 @@ class Produto {
         }
     }
 
-    /**
-     * Desativa um produto (exclusão lógica).
-     */
     static async removerProduto(id_produto: number): Promise<boolean> {
         const client = await database.connect();
 
@@ -180,9 +170,6 @@ class Produto {
         }
     }
 
-    /**
-     * Atualiza os dados cadastrais de um produto.
-     */
     static async atualizarProduto(produto: Produto): Promise<boolean> {
         try {
             const produtoConsulta: ProdutoDTO = await Produto.listarProduto(produto.getIdProduto());

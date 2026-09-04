@@ -74,7 +74,7 @@ class ProdutoController extends Produto {
                 dadosRecebidos.nome,
                 dadosRecebidos.preco_unitario,
                 dadosRecebidos.descricao,
-                0, // Quantidade disponível inicial é gerada no banco/trigger
+                0,
                 dadosRecebidos.quantidade_minima ?? 0
             );
 
@@ -85,8 +85,15 @@ class ProdutoController extends Produto {
             } else {
                 res.status(400).json({ mensagem: "Não foi possível cadastrar o produto." });
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error(`[ProdutoController] Erro ao cadastrar produto:`, error);
+
+            // Captura violação de unicidade (código de produto duplicado - erro 23505 do Postgres)
+            if (error.code === '23505') {
+                res.status(409).json({ mensagem: "Já existe um produto com este código cadastrado." });
+                return;
+            }
+
             res.status(500).json({ mensagem: "Erro interno ao cadastrar o produto." });
         }
     }
@@ -155,7 +162,8 @@ class ProdutoController extends Produto {
                 dadosRecebidos.preco_unitario,
                 dadosRecebidos.descricao,
                 dadosRecebidos.quantidade_disponivel ?? 0,
-                dadosRecebidos.quantidade_minima ?? 0
+                dadosRecebidos.quantidade_minima ?? 0,
+                idProduto // Passa o ID extraído dos parâmetros da requisição
             );
 
             produto.setIdProduto(idProduto);
@@ -169,6 +177,11 @@ class ProdutoController extends Produto {
             }
         } catch (error: any) {
             console.error(`[ProdutoController] Erro ao atualizar produto (id: ${req.params.id}):`, error);
+
+            if (error.code === '23505') {
+                res.status(409).json({ mensagem: "Este código de produto já está em uso por outro registro." });
+                return;
+            }
 
             if (error.message?.includes("não encontrado")) {
                 res.status(404).json({ mensagem: error.message });
