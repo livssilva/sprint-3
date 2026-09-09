@@ -58,24 +58,35 @@ class CategoriaController extends Categoria {
         }
     }
 
-    static async remover(req: Request, res: Response) {
-        try {
-            const idCategoria = parseInt(req.params.id as string);
-            if (isNaN(idCategoria) || idCategoria <= 0) {
-                res.status(400).json({ mensagem: "ID inválido. Informe um número inteiro positivo." });
-                return;
-            }
-
-            const ok = await Categoria.removerCategoria(idCategoria);
-            if (ok) {
-                res.status(200).json({ mensagem: "Categoria removida com sucesso." });
-            } else {
-                res.status(404).json({ mensagem: "Categoria não encontrada." });
-            }
-        } catch (error) {
-            res.status(500).json({ mensagem: "Erro interno ao remover categoria. Verifique se existem produtos associados a ela." });
+static async remover(req: Request, res: Response) {
+    try {
+        const idCategoria = parseInt(req.params.id as string);
+        
+        if (isNaN(idCategoria) || idCategoria <= 0) {
+            res.status(400).json({ mensagem: "ID inválido. Informe um número inteiro positivo." });
+            return;
         }
+
+        const ok = await Categoria.removerCategoria(idCategoria);
+        if (ok) {
+            res.status(200).json({ mensagem: "Categoria removida com sucesso." });
+        } else {
+            res.status(404).json({ mensagem: "Categoria não encontrada." });
+        }
+    } catch (error: any) {
+        console.error(`[CategoriaController] Erro ao remover categoria (id: ${req.params.id}):`, error);
+
+        // Erro 23503: Violação de Chave Estrangeira (Foreign Key Constraint)
+        if (error.code === '23503') {
+            res.status(409).json({ 
+                mensagem: "Não é possível excluir a categoria pois existem produtos vinculados a ela." 
+            });
+            return;
+        }
+
+        res.status(500).json({ mensagem: "Erro interno ao remover categoria." });
     }
+}
 
     static async atualizar(req: Request, res: Response) {
         try {
