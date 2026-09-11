@@ -38,10 +38,10 @@ router.put("/categoria/:id", CategoriaController.atualizar);
 router.delete("/categoria/:id", CategoriaController.remover);
 
 // ==================== ROTAS DE MOVIMENTAÇÃO ====================
-router.get("/movimentacoes", MovimentacaoController.listar);
-router.get("/movimentacoes/:id", MovimentacaoController.buscarPorId);
-router.post("/movimentacoes", MovimentacaoController.cadastrar);
-router.put("/movimentacoes/:id", MovimentacaoController.atualizar);
-router.delete("/movimentacoes/:id", MovimentacaoController.remover);
+router.get("/movimentacao", MovimentacaoController.listar);
+router.get("/movimentacao/:id", MovimentacaoController.buscarPorId);
+router.post("/cadastrar/movimentacao", MovimentacaoController.cadastrar);
+router.put("/movimentacao/:id", MovimentacaoController.atualizar);
+router.delete("/movimentacao/:id", MovimentacaoController.remover);
 
 export { router };
