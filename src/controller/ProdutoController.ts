@@ -4,9 +4,6 @@ import type ProdutoDTO from "../interface/ProdutoDTO.js";
 
 class ProdutoController extends Produto {
 
-    /**
-     * Lista todos os produtos ativos.
-     */
     static async todos(req: Request, res: Response) {
         try {
             const listaDeProdutos = await Produto.listarProdutos();
@@ -23,9 +20,6 @@ class ProdutoController extends Produto {
         }
     }
 
-    /**
-     * Busca um produto por ID.
-     */
     static async produto(req: Request, res: Response) {
         try {
             const idProduto = parseInt(req.params.id as string);
@@ -49,9 +43,6 @@ class ProdutoController extends Produto {
         }
     }
 
-    /**
-     * Cadastra um novo produto.
-     */
     static async cadastrar(req: Request, res: Response) {
         try {
             const dadosRecebidos: ProdutoDTO = req.body;
@@ -69,13 +60,13 @@ class ProdutoController extends Produto {
             }
 
             const novoProduto = new Produto(
-                dadosRecebidos.id_categoria,
+                Number(dadosRecebidos.id_categoria),
                 dadosRecebidos.codigo,
                 dadosRecebidos.nome,
-                dadosRecebidos.preco_unitario,
+                Number(dadosRecebidos.preco_unitario),
                 dadosRecebidos.descricao,
                 0,
-                dadosRecebidos.quantidade_minima ?? 0
+                Number(dadosRecebidos.quantidade_minima ?? 0)
             );
 
             const result = await Produto.cadastrarProduto(novoProduto);
@@ -88,7 +79,6 @@ class ProdutoController extends Produto {
         } catch (error: any) {
             console.error(`[ProdutoController] Erro ao cadastrar produto:`, error);
 
-            // Captura violação de unicidade (código de produto duplicado - erro 23505 do Postgres)
             if (error.code === '23505') {
                 res.status(409).json({ mensagem: "Já existe um produto com este código cadastrado." });
                 return;
@@ -98,9 +88,6 @@ class ProdutoController extends Produto {
         }
     }
 
-    /**
-     * Desativa (remove logicamente) um produto por ID.
-     */
     static async remover(req: Request, res: Response) {
         try {
             const idProduto = parseInt(req.params.id as string);
@@ -129,9 +116,6 @@ class ProdutoController extends Produto {
         }
     }
 
-    /**
-     * Atualiza um produto por ID.
-     */
     static async atualizar(req: Request, res: Response) {
         try {
             const idProduto = parseInt(req.params.id as string);
@@ -156,17 +140,15 @@ class ProdutoController extends Produto {
             }
 
             const produto = new Produto(
-                dadosRecebidos.id_categoria,
+                Number(dadosRecebidos.id_categoria),
                 dadosRecebidos.codigo,
                 dadosRecebidos.nome,
-                dadosRecebidos.preco_unitario,
+                Number(dadosRecebidos.preco_unitario),
                 dadosRecebidos.descricao,
-                dadosRecebidos.quantidade_disponivel ?? 0,
-                dadosRecebidos.quantidade_minima ?? 0,
-                idProduto // Passa o ID extraído dos parâmetros da requisição
+                Number(dadosRecebidos.quantidade_disponivel ?? 0),
+                Number(dadosRecebidos.quantidade_minima ?? 0),
+                idProduto
             );
-
-            produto.setIdProduto(idProduto);
 
             const result = await Produto.atualizarProduto(produto);
 
