@@ -4,7 +4,6 @@ import { DatabaseModel } from "./DatabaseModel.js";
 const database = new DatabaseModel().pool;
 
 class Produto {
-    // ==================== ATRIBUTOS PRIVADOS ====================
     private id_produto: number;
     private id_categoria: number;
     private codigo: string;
@@ -15,7 +14,6 @@ class Produto {
     private quantidade_minima: number;
     private ativo: boolean = true;
 
-    // ==================== CONSTRUTOR ====================
     constructor(
         _id_categoria: number,
         _codigo: string,
@@ -24,24 +22,23 @@ class Produto {
         _descricao?: string | null,
         _quantidade_disponivel: number = 0,
         _quantidade_minima: number = 0,
-        _id_produto: number = 0 // <--- Adicionado parâmetro opcional no final
+        _id_produto: number = 0
     ) {
-        this.id_produto = _id_produto; // <--- Atribuição do ID
-        this.id_categoria = _id_categoria;
+        this.id_produto = Number(_id_produto);
+        this.id_categoria = Number(_id_categoria);
         this.codigo = _codigo;
         this.nome = _nome;
-        this.preco_unitario = _preco_unitario;
+        this.preco_unitario = Number(_preco_unitario);
         this.descricao = _descricao ?? null;
-        this.quantidade_disponivel = _quantidade_disponivel;
-        this.quantidade_minima = _quantidade_minima;
+        this.quantidade_disponivel = Number(_quantidade_disponivel);
+        this.quantidade_minima = Number(_quantidade_minima);
     }
 
-    // ==================== GETTERS E SETTERS ====================
     public getIdProduto(): number { return this.id_produto; }
-    public setIdProduto(value: number): void { this.id_produto = value; }
+    public setIdProduto(value: number): void { this.id_produto = Number(value); }
 
     public getIdCategoria(): number { return this.id_categoria; }
-    public setIdCategoria(value: number): void { this.id_categoria = value; }
+    public setIdCategoria(value: number): void { this.id_categoria = Number(value); }
 
     public getCodigo(): string { return this.codigo; }
     public setCodigo(value: string): void { this.codigo = value; }
@@ -53,34 +50,31 @@ class Produto {
     public setDescricao(value: string | null): void { this.descricao = value; }
 
     public getPrecoUnitario(): number { return this.preco_unitario; }
-    public setPrecoUnitario(value: number): void { this.preco_unitario = value; }
+    public setPrecoUnitario(value: number): void { this.preco_unitario = Number(value); }
 
     public getQuantidadeDisponivel(): number { return this.quantidade_disponivel; }
-    public setQuantidadeDisponivel(value: number): void { this.quantidade_disponivel = value; }
+    public setQuantidadeDisponivel(value: number): void { this.quantidade_disponivel = Number(value); }
 
     public getQuantidadeMinima(): number { return this.quantidade_minima; }
-    public setQuantidadeMinima(value: number): void { this.quantidade_minima = value; }
+    public setQuantidadeMinima(value: number): void { this.quantidade_minima = Number(value); }
 
     public getAtivo(): boolean { return this.ativo; }
     public setAtivo(value: boolean): void { this.ativo = value; }
 
-    // ==================== MÉTODO PRIVADO: toDTO ====================
     private static toDTO(produto: any): ProdutoDTO {
         return {
-            id_produto: produto.id_produto,
-            id_categoria: produto.id_categoria,
+            id_produto: Number(produto.id_produto),
+            id_categoria: Number(produto.id_categoria),
             codigo: produto.codigo,
             nome: produto.nome,
             descricao: produto.descricao,
             preco_unitario: parseFloat(produto.preco_unitario),
-            quantidade_disponivel: produto.quantidade_disponivel,
-            quantidade_minima: produto.quantidade_minima,
+            quantidade_disponivel: Number(produto.quantidade_disponivel ?? 0),
+            quantidade_minima: Number(produto.quantidade_minima ?? 0),
             ativo: produto.ativo,
             data_cadastro: produto.data_cadastro
         };
     }
-
-    // ==================== MÉTODOS ESTÁTICOS ====================
 
     static async listarProdutos(): Promise<ProdutoDTO[]> {
         try {
