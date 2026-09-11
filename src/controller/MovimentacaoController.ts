@@ -1,82 +1,146 @@
-import Movimentacao from "../model/Movimentacao.js";
 import { type Request, type Response } from "express";
-import type MovimentacaoDTO from "../interface/MovimentacaoDTO.js";
+import Movimentacao from "../model/Movimentacao.js";
 
-class MovimentacaoController extends Movimentacao {
+class MovimentacaoController {
 
-    static async todos(req: Request, res: Response) {
+    // 1. LISTAR TODAS AS MOVIMENTAÇÕES
+    static async listar(req: Request, res: Response): Promise<void> {
         try {
-            const lista = await Movimentacao.listarMovimentacoes();
-            if (lista.length === 0) {
+            const movimentacoes = await Movimentacao.listarMovimentacoes();
+            if (movimentacoes.length === 0) {
                 res.status(204).send();
                 return;
             }
-            res.status(200).json(lista);
-        } catch (error) {
+            res.status(200).json(movimentacoes);
+        } catch (error: any) {
+            console.error("[MovimentacaoController] Erro ao listar:", error);
             res.status(500).json({ mensagem: "Erro interno ao listar movimentações." });
         }
     }
 
-    static async porProduto(req: Request, res: Response) {
+    // 2. BUSCAR MOVIMENTAÇÃO POR ID
+    static async buscarPorId(req: Request, res: Response): Promise<void> {
         try {
-            const idProduto = parseInt(req.params.idProduto as string);
-            if (isNaN(idProduto) || idProduto <= 0) {
-                res.status(400).json({ mensagem: "ID de produto inválido." });
+            const idMovimentacao = Number(req.params.id);
+            if (isNaN(idMovimentacao) || idMovimentacao <= 0) {
+                res.status(400).json({ mensagem: "ID de movimentação inválido." });
                 return;
             }
 
-            const lista = await Movimentacao.listarPorProduto(idProduto);
-            if (lista.length === 0) {
-                res.status(204).send();
+            const movimentacao = await Movimentacao.buscarPorId(idMovimentacao);
+            if (!movimentacao) {
+                res.status(404).json({ mensagem: "Movimentação não encontrada." });
                 return;
             }
-            res.status(200).json(lista);
-        } catch (error) {
-            res.status(500).json({ mensagem: "Erro interno ao buscar histórico do produto." });
+
+            res.status(200).json(movimentacao);
+        } catch (error: any) {
+            console.error("[MovimentacaoController] Erro ao buscar por ID:", error);
+            res.status(500).json({ mensagem: "Erro interno ao buscar movimentação." });
         }
     }
 
-    static async cadastrar(req: Request, res: Response) {
+    // 3. CADASTRAR NOVA MOVIMENTAÇÃO
+    static async cadastrar(req: Request, res: Response): Promise<void> {
         try {
-            const dados: MovimentacaoDTO = req.body;
+            const { id_produto, tipo, quantidade, observacao } = req.body;
 
-            if (!dados.id_produto || !dados.tipo || !dados.quantidade) {
-                res.status(400).json({
-                    mensagem: "Campos obrigatórios ausentes: id_produto, tipo ('ENTRADA'|'SAIDA') e quantidade."
-                });
+            const idProduto = Number(id_produto);
+            const qtd = Number(quantidade);
+
+            if (!idProduto || isNaN(idProduto) || idProduto <= 0) {
+                res.status(400).json({ mensagem: "Informe um ID de produto válido." });
                 return;
             }
 
-            if (dados.tipo !== 'ENTRADA' && dados.tipo !== 'SAIDA') {
+            if (!tipo || (tipo !== 'ENTRADA' && tipo !== 'SAIDA')) {
                 res.status(400).json({ mensagem: "O tipo deve ser 'ENTRADA' ou 'SAIDA'." });
                 return;
             }
 
-            if (dados.quantidade <= 0) {
-                res.status(400).json({ mensagem: "A quantidade deve ser maior que zero." });
+            if (!qtd || isNaN(qtd) || qtd <= 0) {
+                res.status(400).json({ mensagem: "A quantidade deve ser um número maior que zero." });
                 return;
             }
 
-            const novaMov = new Movimentacao(
-                dados.id_produto,
-                dados.tipo,
-                dados.quantidade,
-                dados.observacao
+            const novaMovimentacao = new Movimentacao(
+                idProduto,
+                tipo,
+                qtd,
+                observacao ?? null
             );
 
-            const ok = await Movimentacao.cadastrarMovimentacao(novaMov);
+            await Movimentacao.cadastrarMovimentacao(novaMovimentacao);
+            res.status(201).json({ mensagem: "Movimentação cadastrada com sucesso!" });
 
-            if (ok) {
-                res.status(201).json({ mensagem: "Movimentação registrada com sucesso." });
-            } else {
-                res.status(400).json({ mensagem: "Não foi possível registrar a movimentação." });
-            }
         } catch (error: any) {
-            if (error.message?.includes("Estoque insuficiente")) {
-                res.status(422).json({ mensagem: error.message });
+            const msg = error.message || "";
+            if (
+                msg.includes("Estoque insuficiente") ||
+                msg.includes("não existe")
+            ) {
+                res.status(422).json({ mensagem: msg });
                 return;
             }
-            res.status(500).json({ mensagem: "Erro interno ao registrar movimentação." });
+            console.error("[MovimentacaoController] Erro ao cadastrar:", error);
+            res.status(500).json({ mensagem: "Erro interno ao cadastrar movimentação." });
+        }
+    }
+
+    // 4. ATUALIZAR MOVIMENTAÇÃO EXISTENTE
+    static async atualizar(req: Request, res: Response): Promise<void> {
+        try {
+            const idMovimentacao = Number(req.params.id);
+            if (isNaN(idMovimentacao) || idMovimentacao <= 0) {
+                res.status(400).json({ mensagem: "ID de movimentação inválido." });
+                return;
+            }
+
+            const dadosAtualizados = req.body;
+
+            await Movimentacao.atualizarMovimentacao(idMovimentacao, dadosAtualizados);
+            res.status(200).json({ mensagem: "Movimentação e estoque atualizados com sucesso!" });
+
+        } catch (error: any) {
+            const msg = error.message || "";
+            if (
+                msg.includes("Estoque insuficiente") ||
+                msg.includes("não encontrada") ||
+                msg.includes("não existe")
+            ) {
+                res.status(422).json({ mensagem: msg });
+                return;
+            }
+            console.error("[MovimentacaoController] Erro ao atualizar:", error);
+            res.status(500).json({ mensagem: "Erro interno ao atualizar movimentação." });
+        }
+    }
+
+    // 5. REMOVER MOVIMENTAÇÃO
+    static async remover(req: Request, res: Response): Promise<void> {
+        try {
+            const idMovimentacao = Number(req.params.id);
+            if (isNaN(idMovimentacao) || idMovimentacao <= 0) {
+                res.status(400).json({ mensagem: "ID de movimentação inválido." });
+                return;
+            }
+
+            const removido = await Movimentacao.removerMovimentacao(idMovimentacao);
+            if (!removido) {
+                res.status(404).json({ mensagem: "Movimentação não encontrada." });
+                return;
+            }
+
+            res.status(200).json({ mensagem: "Movimentação removida e estoque estornado com sucesso!" });
+
+        } catch (error: any) {
+            const msg = error.message || "";
+            if (msg.includes("estoque do produto ficaria negativo")) {
+                res.status(422).json({ mensagem: msg });
+                return;
+            }
+            console.error("[MovimentacaoController] Erro ao remover:", error);
+            res.status(500).json({ mensagem: "Erro interno ao remover movimentação." });
         }
     }
 }
