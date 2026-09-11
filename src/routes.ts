@@ -1,6 +1,6 @@
 import { Router, type Request, type Response } from "express";
 import ProdutoController from "./controller/ProdutoController.js";
-import CategoriaController from "./controller/CategoriaController.js";0
+import CategoriaController from "./controller/CategoriaController.js";
 import MovimentacaoController from "./controller/MovimentacaoController.js";
 import UsuarioController from "./controller/UsuarioController.js";
 import { autenticarToken } from "./middleware/AuthMiddleware.js";
@@ -24,22 +24,11 @@ router.post("/usuario", UsuarioController.cadastrar);
 router.get("/usuarios", autenticarToken, UsuarioController.todos);
 
 // ==================== ROTAS DE PRODUTO ====================
-
-// Listar todos os produtos ativos
 router.get("/produtos", ProdutoController.todos);
-
-// Buscar um produto por ID
 router.get("/produto/:id", ProdutoController.produto);
-
-// Cadastrar um novo produto
 router.post("/produto", ProdutoController.cadastrar);
-
-// Atualizar dados de um produto por ID
 router.put("/produto/:id", ProdutoController.atualizar);
-
-// Remover (desativar) um produto por ID
 router.delete("/produto/:id", ProdutoController.remover);
-
 
 // ==================== ROTAS DE CATEGORIA ====================
 router.get("/categorias", CategoriaController.todos);
@@ -49,8 +38,10 @@ router.put("/categoria/:id", CategoriaController.atualizar);
 router.delete("/categoria/:id", CategoriaController.remover);
 
 // ==================== ROTAS DE MOVIMENTAÇÃO ====================
-router.get("/movimentacoes", MovimentacaoController.todos);
-router.get("/movimentacoes/produto/:idProduto", MovimentacaoController.porProduto);
-router.post("/movimentacao", MovimentacaoController.cadastrar);
+router.get("/movimentacoes", MovimentacaoController.listar);
+router.get("/movimentacoes/:id", MovimentacaoController.buscarPorId);
+router.post("/movimentacoes", MovimentacaoController.cadastrar);
+router.put("/movimentacoes/:id", MovimentacaoController.atualizar);
+router.delete("/movimentacoes/:id", MovimentacaoController.remover);
 
 export { router };
