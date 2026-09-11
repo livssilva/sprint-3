@@ -23,7 +23,7 @@ class MovimentacaoController {
         try {
             const idMovimentacao = Number(req.params.id);
             if (isNaN(idMovimentacao) || idMovimentacao <= 0) {
-                res.status(400).json({ mensagem: "ID de movimentação inválido." });
+                res.status(400).json({ mensagem: "ID de movimentação inválido. Informe um número inteiro positivo." });
                 return;
             }
 
@@ -49,25 +49,26 @@ class MovimentacaoController {
             const qtd = Number(quantidade);
 
             if (!idProduto || isNaN(idProduto) || idProduto <= 0) {
-                res.status(400).json({ mensagem: "Informe um ID de produto válido." });
+                res.status(400).json({ mensagem: "Informe um ID de produto válido e maior que zero." });
                 return;
             }
 
-            if (!tipo || (tipo !== 'ENTRADA' && tipo !== 'SAIDA')) {
-                res.status(400).json({ mensagem: "O tipo deve ser 'ENTRADA' ou 'SAIDA'." });
+            const tipoFormatado = String(tipo || "").trim().toUpperCase();
+            if (tipoFormatado !== 'ENTRADA' && tipoFormatado !== 'SAIDA') {
+                res.status(400).json({ mensagem: "O tipo de movimentação deve ser obrigatoriamente 'ENTRADA' ou 'SAIDA'." });
                 return;
             }
 
-            if (!qtd || isNaN(qtd) || qtd <= 0) {
-                res.status(400).json({ mensagem: "A quantidade deve ser um número maior que zero." });
+            if (isNaN(qtd) || qtd <= 0) {
+                res.status(400).json({ mensagem: "A quantidade movimentada deve ser um número maior que zero." });
                 return;
             }
 
             const novaMovimentacao = new Movimentacao(
                 idProduto,
-                tipo,
+                tipoFormatado as 'ENTRADA' | 'SAIDA',
                 qtd,
-                observacao ?? null
+                observacao ? String(observacao).trim() : null
             );
 
             await Movimentacao.cadastrarMovimentacao(novaMovimentacao);
@@ -77,7 +78,8 @@ class MovimentacaoController {
             const msg = error.message || "";
             if (
                 msg.includes("Estoque insuficiente") ||
-                msg.includes("não existe")
+                msg.includes("não existe") ||
+                msg.includes("desativado")
             ) {
                 res.status(422).json({ mensagem: msg });
                 return;
@@ -92,11 +94,28 @@ class MovimentacaoController {
         try {
             const idMovimentacao = Number(req.params.id);
             if (isNaN(idMovimentacao) || idMovimentacao <= 0) {
-                res.status(400).json({ mensagem: "ID de movimentação inválido." });
+                res.status(400).json({ mensagem: "ID de movimentação inválido. Informe um número inteiro positivo." });
                 return;
             }
 
             const dadosAtualizados = req.body;
+
+            if (dadosAtualizados.quantidade !== undefined) {
+                const q = Number(dadosAtualizados.quantidade);
+                if (isNaN(q) || q <= 0) {
+                    res.status(400).json({ mensagem: "A quantidade deve ser um número positivo maior que zero." });
+                    return;
+                }
+            }
+
+            if (dadosAtualizados.tipo !== undefined) {
+                const t = String(dadosAtualizados.tipo).toUpperCase();
+                if (t !== 'ENTRADA' && t !== 'SAIDA') {
+                    res.status(400).json({ mensagem: "O tipo de movimentação deve ser 'ENTRADA' ou 'SAIDA'." });
+                    return;
+                }
+                dadosAtualizados.tipo = t;
+            }
 
             await Movimentacao.atualizarMovimentacao(idMovimentacao, dadosAtualizados);
             res.status(200).json({ mensagem: "Movimentação e estoque atualizados com sucesso!" });
@@ -121,7 +140,7 @@ class MovimentacaoController {
         try {
             const idMovimentacao = Number(req.params.id);
             if (isNaN(idMovimentacao) || idMovimentacao <= 0) {
-                res.status(400).json({ mensagem: "ID de movimentação inválido." });
+                res.status(400).json({ mensagem: "ID de movimentação inválido. Informe um número inteiro positivo." });
                 return;
             }
 

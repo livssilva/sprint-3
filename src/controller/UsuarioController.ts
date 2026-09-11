@@ -9,7 +9,7 @@ const JWT_SECRET = process.env.JWT_SECRET || "techforge_secret_key_2026";
 
 class UsuarioController extends Usuario {
 
-    static async todos(req: Request, res: Response) {
+    static async todos(req: Request, res: Response): Promise<void> {
         try {
             const listaDeUsuarios = await Usuario.listarUsuarios();
 
@@ -25,7 +25,7 @@ class UsuarioController extends Usuario {
         }
     }
 
-    static async cadastrar(req: Request, res: Response) {
+    static async cadastrar(req: Request, res: Response): Promise<void> {
         try {
             const dadosRecebidos: UsuarioDTO = req.body;
 
@@ -34,13 +34,34 @@ class UsuarioController extends Usuario {
                 return;
             }
 
-            const usuarioExistente = await Usuario.buscarPorEmail(dadosRecebidos.email);
+            const nomeFormatado = String(dadosRecebidos.nome).trim();
+            const emailFormatado = String(dadosRecebidos.email).trim().toLowerCase();
+            const senhaFormatada = String(dadosRecebidos.senha);
+
+            // Validação de formato de e-mail
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(emailFormatado)) {
+                res.status(400).json({ mensagem: "Formato de e-mail inválido." });
+                return;
+            }
+
+            if (senhaFormatada.length < 4) {
+                res.status(400).json({ mensagem: "A senha deve ter pelo menos 4 caracteres." });
+                return;
+            }
+
+            const usuarioExistente = await Usuario.buscarPorEmail(emailFormatado);
             if (usuarioExistente) {
                 res.status(409).json({ mensagem: "E-mail já cadastrado no sistema." });
                 return;
             }
 
-            const result = await Usuario.cadastrarUsuario(dadosRecebidos);
+            const result = await Usuario.cadastrarUsuario({
+                ...dadosRecebidos,
+                nome: nomeFormatado,
+                email: emailFormatado,
+                senha: senhaFormatada
+            });
 
             if (result) {
                 res.status(201).json({ mensagem: "Usuário cadastrado com sucesso!" });
@@ -54,9 +75,9 @@ class UsuarioController extends Usuario {
     }
 
     /**
-     * Endpoint POST /auth/login - Autentica credenciais e retorna Token JWT
+     * Endpoint POST /login - Autentica credenciais e retorna Token JWT
      */
-    static async login(req: Request, res: Response) {
+    static async login(req: Request, res: Response): Promise<void> {
         try {
             const { email, senha }: LoginDTO = req.body;
 
@@ -65,13 +86,15 @@ class UsuarioController extends Usuario {
                 return;
             }
 
-            const usuario = await Usuario.buscarPorEmail(email);
+            const emailFormatado = String(email).trim().toLowerCase();
+            const usuario = await Usuario.buscarPorEmail(emailFormatado);
+
             if (!usuario) {
                 res.status(401).json({ mensagem: "E-mail ou senha incorretos." });
                 return;
             }
 
-            const senhaValida = await bcrypt.compare(senha, usuario.getSenha());
+            const senhaValida = await bcrypt.compare(String(senha), usuario.getSenha());
             if (!senhaValida) {
                 res.status(401).json({ mensagem: "E-mail ou senha incorretos." });
                 return;

@@ -4,7 +4,7 @@ import type ProdutoDTO from "../interface/ProdutoDTO.js";
 
 class ProdutoController extends Produto {
 
-    static async todos(req: Request, res: Response) {
+    static async todos(req: Request, res: Response): Promise<void> {
         try {
             const listaDeProdutos = await Produto.listarProdutos();
 
@@ -20,7 +20,7 @@ class ProdutoController extends Produto {
         }
     }
 
-    static async produto(req: Request, res: Response) {
+    static async produto(req: Request, res: Response): Promise<void> {
         try {
             const idProduto = parseInt(req.params.id as string);
 
@@ -43,10 +43,11 @@ class ProdutoController extends Produto {
         }
     }
 
-    static async cadastrar(req: Request, res: Response) {
+    static async cadastrar(req: Request, res: Response): Promise<void> {
         try {
             const dadosRecebidos: ProdutoDTO = req.body;
 
+            // Validação de presença
             if (
                 !dadosRecebidos.id_categoria ||
                 !dadosRecebidos.codigo ||
@@ -59,14 +60,47 @@ class ProdutoController extends Produto {
                 return;
             }
 
+            const preco = Number(dadosRecebidos.preco_unitario);
+            const idCategoria = Number(dadosRecebidos.id_categoria);
+            const qtdMinima = Number(dadosRecebidos.quantidade_minima ?? 0);
+
+            // Validação de tipos e regras de domínio
+            if (isNaN(idCategoria) || idCategoria <= 0) {
+                res.status(400).json({ mensagem: "ID de categoria inválido. Deve ser um número positivo." });
+                return;
+            }
+
+            if (isNaN(preco) || preco < 0) {
+                res.status(400).json({ mensagem: "Preço unitário inválido. Não pode ser negativo." });
+                return;
+            }
+
+            if (isNaN(qtdMinima) || qtdMinima < 0) {
+                res.status(400).json({ mensagem: "Quantidade mínima inválida. Não pode ser negativa." });
+                return;
+            }
+
+            const codigoLimpo = String(dadosRecebidos.codigo).trim().toUpperCase();
+            const nomeLimpo = String(dadosRecebidos.nome).trim();
+
+            if (codigoLimpo.length < 2) {
+                res.status(400).json({ mensagem: "O código do produto deve conter pelo menos 2 caracteres." });
+                return;
+            }
+
+            if (nomeLimpo.length < 2) {
+                res.status(400).json({ mensagem: "O nome do produto deve conter pelo menos 2 caracteres." });
+                return;
+            }
+
             const novoProduto = new Produto(
-                Number(dadosRecebidos.id_categoria),
-                dadosRecebidos.codigo,
-                dadosRecebidos.nome,
-                Number(dadosRecebidos.preco_unitario),
-                dadosRecebidos.descricao,
+                idCategoria,
+                codigoLimpo,
+                nomeLimpo,
+                preco,
+                dadosRecebidos.descricao ? String(dadosRecebidos.descricao).trim() : null,
                 0,
-                Number(dadosRecebidos.quantidade_minima ?? 0)
+                qtdMinima
             );
 
             const result = await Produto.cadastrarProduto(novoProduto);
@@ -84,11 +118,16 @@ class ProdutoController extends Produto {
                 return;
             }
 
+            if (error.code === '23503') {
+                res.status(400).json({ mensagem: "A categoria informada não existe no banco de dados." });
+                return;
+            }
+
             res.status(500).json({ mensagem: "Erro interno ao cadastrar o produto." });
         }
     }
 
-    static async remover(req: Request, res: Response) {
+    static async remover(req: Request, res: Response): Promise<void> {
         try {
             const idProduto = parseInt(req.params.id as string);
 
@@ -100,7 +139,7 @@ class ProdutoController extends Produto {
             const result = await Produto.removerProduto(idProduto);
 
             if (result) {
-                res.status(200).json({ mensagem: "Produto removido com sucesso." });
+                res.status(200).json({ mensagem: "Produto desativado/removido com sucesso." });
             } else {
                 res.status(404).json({ mensagem: "Produto não encontrado ou já está inativo." });
             }
@@ -116,7 +155,7 @@ class ProdutoController extends Produto {
         }
     }
 
-    static async atualizar(req: Request, res: Response) {
+    static async atualizar(req: Request, res: Response): Promise<void> {
         try {
             const idProduto = parseInt(req.params.id as string);
 
@@ -139,14 +178,36 @@ class ProdutoController extends Produto {
                 return;
             }
 
+            const preco = Number(dadosRecebidos.preco_unitario);
+            const idCategoria = Number(dadosRecebidos.id_categoria);
+            const qtdMinima = Number(dadosRecebidos.quantidade_minima ?? 0);
+
+            if (isNaN(idCategoria) || idCategoria <= 0) {
+                res.status(400).json({ mensagem: "ID de categoria inválido. Deve ser um número positivo." });
+                return;
+            }
+
+            if (isNaN(preco) || preco < 0) {
+                res.status(400).json({ mensagem: "Preço unitário inválido. Não pode ser negativo." });
+                return;
+            }
+
+            if (isNaN(qtdMinima) || qtdMinima < 0) {
+                res.status(400).json({ mensagem: "Quantidade mínima inválida. Não pode ser negativa." });
+                return;
+            }
+
+            const codigoLimpo = String(dadosRecebidos.codigo).trim().toUpperCase();
+            const nomeLimpo = String(dadosRecebidos.nome).trim();
+
             const produto = new Produto(
-                Number(dadosRecebidos.id_categoria),
-                dadosRecebidos.codigo,
-                dadosRecebidos.nome,
-                Number(dadosRecebidos.preco_unitario),
-                dadosRecebidos.descricao,
+                idCategoria,
+                codigoLimpo,
+                nomeLimpo,
+                preco,
+                dadosRecebidos.descricao ? String(dadosRecebidos.descricao).trim() : null,
                 Number(dadosRecebidos.quantidade_disponivel ?? 0),
-                Number(dadosRecebidos.quantidade_minima ?? 0),
+                qtdMinima,
                 idProduto
             );
 
@@ -162,6 +223,11 @@ class ProdutoController extends Produto {
 
             if (error.code === '23505') {
                 res.status(409).json({ mensagem: "Este código de produto já está em uso por outro registro." });
+                return;
+            }
+
+            if (error.code === '23503') {
+                res.status(400).json({ mensagem: "A categoria informada não existe no banco de dados." });
                 return;
             }
 
