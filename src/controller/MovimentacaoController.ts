@@ -8,7 +8,7 @@ class MovimentacaoController {
         try {
             const movimentacoes = await Movimentacao.listarMovimentacoes();
             if (movimentacoes.length === 0) {
-                res.status(204).send();
+                res.status(200).json([]);
                 return;
             }
             res.status(200).json(movimentacoes);
@@ -43,7 +43,7 @@ class MovimentacaoController {
     // 3. CADASTRAR NOVA MOVIMENTAÇÃO
     static async cadastrar(req: Request, res: Response): Promise<void> {
         try {
-            const { id_produto, tipo, quantidade, observacao } = req.body;
+            const { id_produto, tipo, quantidade, observacao, motivo, preco_unitario_praticado } = req.body;
 
             const idProduto = Number(id_produto);
             const qtd = Number(quantidade);
@@ -68,7 +68,10 @@ class MovimentacaoController {
                 idProduto,
                 tipoFormatado as 'ENTRADA' | 'SAIDA',
                 qtd,
-                observacao ? String(observacao).trim() : null
+                observacao ? String(observacao).trim() : null,
+                motivo ?? null,
+                null,
+                preco_unitario_praticado ? Number(preco_unitario_praticado) : null
             );
 
             await Movimentacao.cadastrarMovimentacao(novaMovimentacao);
@@ -79,7 +82,8 @@ class MovimentacaoController {
             if (
                 msg.includes("Estoque insuficiente") ||
                 msg.includes("não existe") ||
-                msg.includes("desativado")
+                msg.includes("desativado") ||
+                msg.includes("não encontrado")
             ) {
                 res.status(422).json({ mensagem: msg });
                 return;
@@ -89,7 +93,7 @@ class MovimentacaoController {
         }
     }
 
-    // 4. ATUALIZAR MOVIMENTAÇÃO EXISTENTE
+    // 4. ATUALIZAR MOVIMENTAÇÃO (REGISTRA CORREÇÃO DE AUDITORIA)
     static async atualizar(req: Request, res: Response): Promise<void> {
         try {
             const idMovimentacao = Number(req.params.id);
@@ -117,15 +121,21 @@ class MovimentacaoController {
                 dadosAtualizados.tipo = t;
             }
 
-            await Movimentacao.atualizarMovimentacao(idMovimentacao, dadosAtualizados);
-            res.status(200).json({ mensagem: "Movimentação e estoque atualizados com sucesso!" });
+            const sucesso = await Movimentacao.atualizarMovimentacao(idMovimentacao, dadosAtualizados);
+            if (!sucesso) {
+                res.status(404).json({ mensagem: "Movimentação não encontrada para atualização." });
+                return;
+            }
+
+            res.status(200).json({ mensagem: "Correção registrada e estoque recalculado com sucesso!" });
 
         } catch (error: any) {
             const msg = error.message || "";
             if (
                 msg.includes("Estoque insuficiente") ||
                 msg.includes("não encontrada") ||
-                msg.includes("não existe")
+                msg.includes("não existe") ||
+                msg.includes("desativado")
             ) {
                 res.status(422).json({ mensagem: msg });
                 return;
@@ -135,7 +145,7 @@ class MovimentacaoController {
         }
     }
 
-    // 5. REMOVER MOVIMENTAÇÃO
+    // 5. REMOVER MOVIMENTAÇÃO (REGISTRA ESTORNO DE CORREÇÃO)
     static async remover(req: Request, res: Response): Promise<void> {
         try {
             const idMovimentacao = Number(req.params.id);
@@ -150,16 +160,20 @@ class MovimentacaoController {
                 return;
             }
 
-            res.status(200).json({ mensagem: "Movimentação removida e estoque estornado com sucesso!" });
+            res.status(200).json({ mensagem: "Movimentação estornada com sucesso via registro de correção!" });
 
         } catch (error: any) {
             const msg = error.message || "";
-            if (msg.includes("estoque do produto ficaria negativo")) {
+            if (
+                msg.includes("Estoque insuficiente") ||
+                msg.includes("não encontrada") ||
+                msg.includes("desativado")
+            ) {
                 res.status(422).json({ mensagem: msg });
                 return;
             }
             console.error("[MovimentacaoController] Erro ao remover:", error);
-            res.status(500).json({ mensagem: "Erro interno ao remover movimentação." });
+            res.status(500).json({ mensagem: "Erro interno ao estornar movimentação." });
         }
     }
 }
