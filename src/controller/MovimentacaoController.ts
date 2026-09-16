@@ -93,7 +93,7 @@ class MovimentacaoController {
         }
     }
 
-    // 4. ATUALIZAR MOVIMENTAÇÃO (REGISTRA CORREÇÃO DE AUDITORIA)
+    // 4. ATUALIZAR MOVIMENTAÇÃO
     static async atualizar(req: Request, res: Response): Promise<void> {
         try {
             const idMovimentacao = Number(req.params.id);
@@ -127,7 +127,7 @@ class MovimentacaoController {
                 return;
             }
 
-            res.status(200).json({ mensagem: "Correção registrada e estoque recalculado com sucesso!" });
+            res.status(200).json({ mensagem: "Movimentação atualizada e estoque recalculado com sucesso!" });
 
         } catch (error: any) {
             const msg = error.message || "";
@@ -145,7 +145,7 @@ class MovimentacaoController {
         }
     }
 
-    // 5. REMOVER MOVIMENTAÇÃO (REGISTRA ESTORNO DE CORREÇÃO)
+    // 5. REMOVER MOVIMENTAÇÃO
     static async remover(req: Request, res: Response): Promise<void> {
         try {
             const idMovimentacao = Number(req.params.id);
@@ -160,20 +160,21 @@ class MovimentacaoController {
                 return;
             }
 
-            res.status(200).json({ mensagem: "Movimentação estornada com sucesso via registro de correção!" });
+            res.status(200).json({ mensagem: "Movimentação removida e estoque recalculado com sucesso!" });
 
         } catch (error: any) {
             const msg = error.message || "";
             if (
                 msg.includes("Estoque insuficiente") ||
                 msg.includes("não encontrada") ||
-                msg.includes("desativado")
+                msg.includes("desativado") ||
+                msg.includes("ficaria negativo")
             ) {
                 res.status(422).json({ mensagem: msg });
                 return;
             }
             console.error("[MovimentacaoController] Erro ao remover:", error);
-            res.status(500).json({ mensagem: "Erro interno ao estornar movimentação." });
+            res.status(500).json({ mensagem: "Erro interno ao remover movimentação." });
         }
     }
 }
